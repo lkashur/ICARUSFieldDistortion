@@ -2,20 +2,36 @@
 Standalone C++ and python scripts to analyze space charge effects and other E-Field distortions at ICARUS.
 
 ### Prerequisite
-Depending on the analysis stage, one of two setup scripts need to be sourced.  
-
-For analyses using C++:
-```bash
-source setup_cpp.sh
+Set up the proper container on an ICARUS GPVM:
+```
+sh /exp/$(id -ng)/data/users/vito/podman/start_SL7dev_jsl.sh
 ```
 
-For analyses using python:
+### Stage 0: Calculate Offsets
+<ins>Input</ins>: Calibration Ntuples
+
+<ins>Output</ins>: TTree(s) containing x,y,z and dx info for every hit
+
+
+##### Setup
 ```bash
-source setup_py.sh
+cd stage0
+source setup.sh
 ```
 
-### Stage 0
+##### Create working directory that corresponds to a dataset
+```bash
+cd ../
+mkdir <dataset name>
+```
 
-### Stage 1
+##### Run analyzer
+```bash
+../stage0/sce_dx_analyzer filelist.txt W
+```
 
-### Stage 2
+The above command produces an output root file(s) named "offsets_W.root" containing the offset TTree.
+
+### Stage 1: Aggregate Offsets
+
+### Stage 2: Generate Space Charge Density Maps
