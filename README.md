@@ -10,7 +10,7 @@ sh /exp/$(id -ng)/data/users/vito/podman/start_SL7dev_jsl.sh
 ### Stage 0: Calculate Offsets
 <ins>Input</ins>: Calibration Ntuples
 
-<ins>Output</ins>: TTree(s) containing x,y,z and dx info for every hit
+<ins>Output</ins>: ROOT file(s) with TTree containing x,y,z and dx info for every hit
 
 
 ##### Setup
@@ -33,5 +33,10 @@ mkdir <dataset name>
 The above command produces an output root file(s) named "offsets_W.root" containing the offset TTree.
 
 ### Stage 1: Aggregate Offsets
+<ins>Input</ins>: ROOT files from Stage 0 (paths in a text file)
+
+<ins>Output</ins>: 
+1. TH3 with aggregated offset in each bin
+2. CSV with list of offsets for each bin
 
 ### Stage 2: Generate Space Charge Density Maps
