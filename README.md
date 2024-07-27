@@ -7,6 +7,12 @@ Set up the proper container on an ICARUS GPVM:
 sh /exp/$(id -ng)/data/users/vito/podman/start_SL7dev_jsl.sh
 ```
 
+Create working directory that corresponds to a dataset
+```bash
+mkdir <dataset name>
+cd <dataset name>
+```
+
 ### Stage 0: Calculate Offsets
 <ins>Input</ins>: Calibration Ntuples
 
@@ -15,28 +21,33 @@ sh /exp/$(id -ng)/data/users/vito/podman/start_SL7dev_jsl.sh
 
 ##### Setup
 ```bash
-cd stage0
-source setup.sh
-```
-
-##### Create working directory that corresponds to a dataset
-```bash
-cd ../
-mkdir <dataset name>
+source ../stage0/setup.sh
 ```
 
 ##### Run analyzer
 ```bash
-../stage0/sce_dx_analyzer filelist.txt W
+../stage0/sce_dx_analyzer filelist0.txt W
 ```
 
-The above command produces an output root file(s) named "offsets_W.root" containing the offset TTree.
+The above command produces an output ROOT file(s) named "offsets_W.root" containing the offset TTree.
 
 ### Stage 1: Aggregate Offsets
 <ins>Input</ins>: ROOT files from Stage 0 (paths in a text file)
 
 <ins>Output</ins>: 
 1. TH3 with aggregated offset in each bin
-2. CSV with list of offsets for each bin
+2. text file with list of offsets for each bin
+
+##### Setup
+```bash
+source ../stage1/setup.sh
+```
+
+##### Run aggregator
+```bash
+../stage0/sce_dx_aggregator filelist1.txt WE
+```
+
+The above command produces an output ROOT file named "aggoffsets_WE.root" containing the aggregated TH3, as well as a text file named "alloffsets_WE.txt" containing all offsets per bin.
 
 ### Stage 2: Generate Space Charge Density Maps
