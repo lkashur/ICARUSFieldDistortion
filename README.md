@@ -36,7 +36,7 @@ The above command produces an output ROOT file(s) named "offsets_W.root" contain
 
 <ins>Output</ins>: 
 1. TH3 with aggregated offset in each bin
-2. text file with list of offsets for each bin
+2. Text file with list of offsets for each bin
 
 ##### Setup
 ```bash
