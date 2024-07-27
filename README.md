@@ -10,7 +10,6 @@ sh /exp/$(id -ng)/data/users/vito/podman/start_SL7dev_jsl.sh
 Create working directory that corresponds to a dataset
 ```bash
 mkdir <dataset name>
-cd <dataset name>
 ```
 
 ### Stage 0: Calculate Offsets
@@ -21,10 +20,12 @@ cd <dataset name>
 
 ##### Setup
 ```bash
-source ../stage0/setup.sh
+cd stage0
+source setup.sh
 ```
 
 ##### Run analyzer
+From <dataset name> directory:
 ```bash
 ../stage0/sce_dx_analyzer filelist0.txt W
 ```
@@ -40,10 +41,12 @@ The above command produces an output ROOT file(s) named "offsets_W.root" contain
 
 ##### Setup
 ```bash
-source ../stage1/setup.sh
+cd stage1
+source setup.sh
 ```
 
 ##### Run aggregator
+From <dataset name> directory:
 ```bash
 ../stage0/sce_dx_aggregator filelist1.txt WE
 ```
