@@ -9,7 +9,7 @@ sh /exp/$(id -ng)/data/users/vito/podman/start_SL7dev_jsl.sh
 
 Create working directory that corresponds to a dataset
 ```bash
-mkdir <dataset name>
+mkdir <dataset>
 ```
 
 ### Stage 0: Calculate Offsets
@@ -25,7 +25,7 @@ source setup.sh
 ```
 
 ##### Run analyzer
-From <dataset name> directory:
+From dataset directory:
 ```bash
 ../stage0/sce_dx_analyzer filelist0.txt W
 ```
@@ -46,7 +46,7 @@ source setup.sh
 ```
 
 ##### Run aggregator
-From <dataset name> directory:
+From dataset directory:
 ```bash
 ../stage0/sce_dx_aggregator filelist1.txt WE
 ```
