@@ -263,11 +263,19 @@ int main(int argc, char** argv)
   hRho3D->GetYaxis()->SetTitle("y [cm]");
   hRho3D->GetZaxis()->SetTitle("z [cm]");
   hRho3D->Write();
+
   TH2D *hRhoXY = (TH2D*) hRho3D->Project3D("yx");
   hRhoXY->SetTitle("Average Space Charge Density [nC/m^{3}]");
   hRhoXY->GetXaxis()->SetTitle("x [cm]");
   hRhoXY->GetYaxis()->SetTitle("y [cm]");
   hRhoXY->Write();
+
+  hRho3D->GetZaxis()->SetRange(5,5);
+  TH2D *hRhoXY_Z0 = (TH2D*) hRho3D->Project3D("Z0_yx");
+  hRhoXY_Z0->SetTitle("Average Space Charge Density [nC/m^{3}]: Z = 0 cm");
+  hRhoXY_Z0->GetXaxis()->SetTitle("x [cm]");
+  hRhoXY_Z0->GetYaxis()->SetTitle("y [cm]");
+  hRhoXY_Z0->Write();
 
   /*
   hRho3D_clean->GetXaxis()->SetTitle("x [cm]");
