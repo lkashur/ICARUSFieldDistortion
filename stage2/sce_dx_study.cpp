@@ -34,10 +34,6 @@ vector<double> linspace(double start, double end, int n);
 //////////////////////////////////////////////////
 int main(int argc, char** argv)
 {
-  // Output
-  TFile outf("scedxstudy.root","recreate");
-  outf.cd();  
-
   // Drift Velocity vs. E-Field fit
   TF1 driftVelFit("driftVelFit","(1.0 - 0.0184 * (87.5 - 89.0)) * pol5",-0.05,1.1);
   driftVelFit.SetParameter(0,0.0);
@@ -82,6 +78,11 @@ int main(int argc, char** argv)
       xrange1=358.49;
       sel_tpc = 3;
     }
+
+  // Output file
+  string scedxstudy_text = string("scedxstudy_") + tpc + string(".root");
+  TFile outf(scedxstudy_text.c_str(), "recreate");
+  outf.cd();
 
   // Make output TH3, starting from a copy of input TH3
   TH3D *hRho3D = new TH3D("hRho3D","",hAgg->GetNbinsX(), xrange0, xrange1, hAgg->GetNbinsY(), -181.86, 134.96, hAgg->GetNbinsZ(), -894.9515, 894.9515);
