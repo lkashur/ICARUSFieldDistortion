@@ -171,7 +171,9 @@ int main(int argc, char** argv)
   DummyHist3D->Write();
   outf.Close();
 
-  //rdf_bins.Display({"tpc", "sel_xs", "sel_ys", "sel_zs", "offsets", "bin_ids"})->Print();
+  rdf_bins.Display({"tpc", "sel_xs", "sel_ys", "sel_zs", "offsets", "bin_ids"})->Print();
+  cout << "No. tracks: " << rdf_bins.Count().GetValue() << endl;
+
   
   return 0;
 
