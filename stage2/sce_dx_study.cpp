@@ -84,8 +84,10 @@ int main(int argc, char** argv)
   TFile outf(scedxstudy_text.c_str(), "recreate");
   outf.cd();
 
-  // Make output TH3, starting from a copy of input TH3
+  // Make output TH3s, starting from a copy of input TH3
+  TH3D *hEfield3D = new TH3D("hEfield3D","",hAgg->GetNbinsX(), xrange0, xrange1, hAgg->GetNbinsY(), -181.86, 134.96, hAgg->GetNbinsZ(), -894.9515, 894.9515);
   TH3D *hRho3D = new TH3D("hRho3D","",hAgg->GetNbinsX(), xrange0, xrange1, hAgg->GetNbinsY(), -181.86, 134.96, hAgg->GetNbinsZ(), -894.9515, 894.9515);
+
 
   // Loop over {y,z} bins
   for (int j = 0; j <= hAgg->GetNbinsY()+1; j++)
@@ -113,6 +115,8 @@ int main(int argc, char** argv)
 
 	  // Fit dx vs. x with polynomial
 	  TF1 *dxfit = new TF1("dxfit","pol3",xrange0,xrange1);
+	  //TF1 *dxfit = new TF1("dxfit","[0]*sqrt([1]-[2]*x**2) + [3]*x",xrange0,xrange1);
+	  //TF1 *dxfit = new TF1("dxfit","landau",xrange0,xrange1);
           hdx->Fit("dxfit", "MRQF");
 	  hdx->SetTitle("Spatial Offsets vs. Drift Length");
 	  hdx->GetXaxis()->SetTitle("Drift Length [cm]");
@@ -186,9 +190,11 @@ int main(int argc, char** argv)
 	  ///////////////////////////////////////////////////////////////////
 
 	  // Sample dx vs. x fit on a linspace
+	  vector<double> efieldvals;
 	  vector<double> rhovals;
           for(const auto& x : tempx)
             {
+	      efieldvals.push_back(efit->Eval(x)); // Doing this now to use for TH3 later
               rhovals.push_back((pow(10.0,9))*0.00013316416*(efit->Derivative(x)));
             }	  
 
@@ -200,7 +206,11 @@ int main(int argc, char** argv)
 	  gRho->GetYaxis()->SetTitle("Space Charge Density [nC/m^{3}]");
 	  gRho->Write();
 
-	  // Average space charge density over bins of x
+	  ///////////////////////////////////////////////////////////////////
+	  /// Create Efield and SC density maps
+	  ///////////////////////////////////////////////////////////////////
+
+	  // Average over bins of x
 	  for (int i = 0; i <= hAgg->GetNbinsX()+1; i++)
             {
               float bin_low_x = hAgg->GetXaxis()->GetBinLowEdge(i);
@@ -208,23 +218,33 @@ int main(int argc, char** argv)
 
               int gbn = hAgg->GetBin(i, j, k);
 	      
-	      // Sum rho entries for specific x-bin
+	      // Sum entries for specific x-bin
+	      vector<double> xbin_efieldvals;
               vector<double> xbin_rhovals;
-              for(int s=0; s<rhovals.size(); s++)
+              for(int s=0; s<efieldvals.size(); s++)
                 {
                   if(tempx[s] > bin_low_x && tempx[s] < bin_high_x)
                     {
+		      xbin_efieldvals.push_back(efieldvals[s]);
                       xbin_rhovals.push_back(rhovals[s]);
                     }
                 }
 
 	      // Average caculation
-              double sum = 0;
+	      double efield_sum = 0;
+	      for(const auto& val : xbin_efieldvals)
+		{
+		  efield_sum += val;
+		}
+	      double xbin_efieldmean = efield_sum / xbin_efieldvals.size();
+	      hEfield3D->SetBinContent(gbn, xbin_efieldmean);
+
+              double rho_sum = 0;
               for(const auto& val : xbin_rhovals)
 		{
-                  sum += val;
+                  rho_sum += val;
                 }
-	      double xbin_rhomean = sum / xbin_rhovals.size();
+	      double xbin_rhomean = rho_sum / xbin_rhovals.size();
 	      hRho3D->SetBinContent(gbn, xbin_rhomean);
 	      
 	    } // end x loop
@@ -259,6 +279,12 @@ int main(int argc, char** argv)
   */
 
   outf.cd();
+  
+  hEfield3D->GetXaxis()->SetTitle("x [cm]");
+  hEfield3D->GetYaxis()->SetTitle("y [cm]");
+  hEfield3D->GetZaxis()->SetTitle("z [cm]");
+  hEfield3D->Write();
+
   hRho3D->GetXaxis()->SetTitle("x [cm]");
   hRho3D->GetYaxis()->SetTitle("y [cm]");
   hRho3D->GetZaxis()->SetTitle("z [cm]");

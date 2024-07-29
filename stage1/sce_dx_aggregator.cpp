@@ -93,12 +93,12 @@ int main(int argc, char** argv)
 
   // Cuts on anode-cathode side of track
   auto rdf_cuts = rdf.Filter([&](int tpc){ return tpc == sel_tpc; }, {"tpc"} )
-                     .Filter("min_time_y < 134.96 - 10")
-                     .Filter("min_time_y > -181.86 + 10")
+                     .Filter("min_time_y < 134.96 - 15")
+                     .Filter("min_time_y > -181.86 + 15")
                      .Filter("min_time_z > -894.9515 + 100")
                      .Filter("min_time_z < 894.9515 - 100")
-                     .Filter("max_time_y < 134.96 - 50")
-                     .Filter("max_time_y > -181.86 + 50")
+                     .Filter("max_time_y < 134.96 - 85")
+                     .Filter("max_time_y > -181.86 + 85")
                      .Filter("max_time_z > -894.9515 + 100")
                      .Filter("max_time_z < 894.9515 - 100");
   
