@@ -262,7 +262,7 @@ ROOT::RVec<ROOT::RVec<float>> get_offsets(ROOT::RVec<float> xs, ROOT::RVec<float
 }
 
 
-
+/*
 ROOT::RVec<ROOT::RVec<float>> get_offsets(ROOT::RVec<float> ts, ROOT::RVec<float> xs, ROOT::RVec<float> ys, ROOT::RVec<float> zs, float slope, float min_time_t, float max_time_t, float min_time_x, float min_time_z)
 {
   ROOT::RVec<float> sel_xs;
@@ -290,3 +290,4 @@ ROOT::RVec<ROOT::RVec<float>> get_offsets(ROOT::RVec<float> ts, ROOT::RVec<float
   xyz_dx.push_back(offsets);
   return xyz_dx;
 }
+*/
