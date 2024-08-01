@@ -87,7 +87,7 @@ int main(int argc, char** argv)
   // Make output TH3s, starting from a copy of input TH3
   TH3D *hEfield3D = new TH3D("hEfield3D","",hAgg->GetNbinsX(), xrange0, xrange1, hAgg->GetNbinsY(), -181.86, 134.96, hAgg->GetNbinsZ(), -894.9515, 894.9515);
   TH3D *hRho3D = new TH3D("hRho3D","",hAgg->GetNbinsX(), xrange0, xrange1, hAgg->GetNbinsY(), -181.86, 134.96, hAgg->GetNbinsZ(), -894.9515, 894.9515);
-
+  TH3D *hRho3D_clean = new TH3D("hRho3D_clean","",hAgg->GetNbinsX(), xrange0, xrange1, hAgg->GetNbinsY(), -181.86, 134.96, hAgg->GetNbinsZ(), -894.9515, 894.9515);
 
   // Loop over {y,z} bins
   for (int j = 0; j <= hAgg->GetNbinsY()+1; j++)
@@ -97,7 +97,6 @@ int main(int argc, char** argv)
 
       for (int k = 0; k <= hAgg->GetNbinsZ()+1; k++)
         {
-
           float bin_low_z = hAgg->GetZaxis()->GetBinLowEdge(k);
           float bin_high_z = hAgg->GetZaxis()->GetBinUpEdge(k);
 
@@ -113,16 +112,23 @@ int main(int argc, char** argv)
 	  // "Project" a single {y,,z} bin along x to get dx vs. x histo
 	  TH1D *hdx = hAgg->ProjectionX("hdx", j, j, k, k, "o");
 
-	  // Fit dx vs. x with polynomial
-	  TF1 *dxfit = new TF1("dxfit","pol3",xrange0,xrange1);
-	  //TF1 *dxfit = new TF1("dxfit","[0]*sqrt([1]-[2]*x**2) + [3]*x",xrange0,xrange1);
-	  //TF1 *dxfit = new TF1("dxfit","landau",xrange0,xrange1);
-          hdx->Fit("dxfit", "MRQF");
-	  hdx->SetTitle("Spatial Offsets vs. Drift Length");
-	  hdx->GetXaxis()->SetTitle("Drift Length [cm]");
-	  hdx->GetYaxis()->SetTitle("Spatial Offset dX [cm]");
-	  hdx->SetMarkerStyle(21);
-	  hdx->Write();
+	  // Convert hdx to gdx (TGraph)
+	  vector<double> gx;
+	  vector<double> gy;
+	  for (int i = 1; i <= hdx->GetNbinsX(); i++)
+	    {
+	      gx.push_back(hdx->GetXaxis()->GetBinCenter(i));
+	      gy.push_back(hdx->GetBinContent(i));
+	    }
+
+	  TGraph *gdx = new TGraph(gx.size(), gx.data(), gy.data());
+	  gdx->SetName("gdx");
+	  TF1 *dxfit = new TF1("dxfit","pol3",xrange0,xrange1); // fit
+	  gdx->Fit("dxfit", "MRQFB");
+	  gdx->SetTitle("Spatial Offsets vs. Drift Length");
+          gdx->GetXaxis()->SetTitle("Drift Length [cm]");
+          gdx->GetYaxis()->SetTitle("Spatial Offset dX [cm]");
+	  gdx->Write();
 	  
 	  /////////////////////////////////////////////////////////
 	  /// Local Drift Velocity
@@ -181,7 +187,15 @@ int main(int argc, char** argv)
 	  gEfield->SetTitle("Electric Field vs. Drift Length");
 	  gEfield->GetXaxis()->SetTitle("Drift Length [cm]");
 	  gEfield->GetYaxis()->SetTitle("Electric Field [kV/cm]");
-          TF1 *efit = new TF1("efit","pol3",xrange0,xrange1);
+          //TF1 *efit = new TF1("efit","[0]*exp([1]*(x-[2])) + [3]",xrange0,xrange1);
+	  //efit->SetParameters(10,0.1,200,0.48);								      
+	  //TF1 *efit = new TF1("efit","[0]*(x-60)**3 + [1]*(x-60)**2 + [2]*(x-60)**1 + [3]*(x-60)**0",xrange0,xrange1);
+	  //efit->SetParameters(0.000000001,0.000001,0.0001,0.48);
+	  //TF1 *efit0 = new TF1("efit0","pol2",xrange0,xrange0+30);
+	  TF1 *efit = new TF1("efit","pol3",xrange0,xrange1);
+	  //TF1 *efit = new TF1("efit","efit0 + efit1",xrange0,xrange1);
+	  //TF1 *efit = new TF1("efit","[0]*[1]**(x-60) + 0.48",xrange0,xrange1);
+	  //efit->SetParameters(0.00001,1.08);
           gEfield->Fit("efit", "MRQF");
 	  gEfield->Write();
 
@@ -255,28 +269,30 @@ int main(int argc, char** argv)
   /////////////////////////////////////////////////////////////
   /// Clean up ... Using hRho3D, fill ONLY good bins of new TH3
   //////////////////////////////////////////////////////////////
-  /*
-  for (int i = 0; i <= hRho3D->GetNbinsX()+1; i++)
+  
+  // Make lines (y=mx+b) defining y/z cuts  
+  for (int i = 0; i <= hAgg->GetNbinsX()+1; i++)
     {
-      float bin_cen_x = hRho3D->GetXaxis()->GetBinCenter(i);
-      for (int j = 0; j <= hRho3D->GetNbinsY()+1; j++)
+      float bin_cen_x = hAgg->GetXaxis()->GetBinCenter(i);
+      for (int j = 0; j <= hAgg->GetNbinsY()+1; j++)
 	{
-	  float bin_cen_y = hRho3D->GetYaxis()->GetBinCenter(j);
-	  for (int k = 0; k <= hRho3D->GetNbinsY()+1; k++)
+	  float bin_cen_y = hAgg->GetYaxis()->GetBinCenter(j);
+	  for (int k = 0; k <= hAgg->GetNbinsY()+1; k++)
 	    {
-	      float bin_cen_z = hRho3D->GetZaxis()->GetBinLowEdge(k);
-	      int gbn = hRho3D->GetBin(i, j, k);
+	      float bin_cen_z = hAgg->GetZaxis()->GetBinLowEdge(k);
+	      int gbn = hAgg->GetBin(i, j, k);
 
 	      // exclude nasty bins
-	      if(bin_cen_y > -130 && bin_cen_y < 85 && bin_cen_z > -795 && bin_cen_z < 795)
+	      float top_y_cut = -0.46*bin_cen_x + 120;
+	      float bottom_y_cut = 0.46*bin_cen_x -166;
+	      if(bin_cen_y < top_y_cut && bin_cen_y > bottom_y_cut && bin_cen_z > -800 && bin_cen_z < 800)
 		{
 		  hRho3D_clean->SetBinContent(gbn, hRho3D->GetBinContent(gbn));
 		}
-	      
 	    }
 	}
     }
-  */
+  
 
   outf.cd();
   
@@ -303,7 +319,7 @@ int main(int argc, char** argv)
   hRhoXY_Z0->GetYaxis()->SetTitle("y [cm]");
   hRhoXY_Z0->Write();
 
-  /*
+  
   hRho3D_clean->GetXaxis()->SetTitle("x [cm]");
   hRho3D_clean->GetYaxis()->SetTitle("y [cm]");
   hRho3D_clean->GetZaxis()->SetTitle("z [cm]");
@@ -314,7 +330,7 @@ int main(int argc, char** argv)
   hRhoXY_clean->GetYaxis()->SetTitle("y [cm]");
   hRhoXY_clean->Write();
   outf.Close();
-  */
+  
   return 0;
 
 } // end main
