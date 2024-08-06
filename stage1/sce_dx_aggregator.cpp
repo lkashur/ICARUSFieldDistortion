@@ -48,9 +48,11 @@ int main(int argc, char** argv)
 
   // Output
   char *tpc;
+  char *sim_or_reco;
   float xrange0;
   float xrange1;
   tpc = (char*) argv[2];
+  sim_or_reco = (char*) argv[3];
   int sel_tpc;
   if (!strcmp(tpc, "EE"))
     {
@@ -77,8 +79,8 @@ int main(int argc, char** argv)
       sel_tpc = 3;
     }
   int Nxbins = 15;
-  int Nybins = 10;
-  int Nzbins = 15;
+  int Nybins = 10; //10
+  int Nzbins = 8; //15
   TH3F *DummyHist3D = new TH3F("DummyHist3D","",Nxbins, xrange0, xrange1, Nybins, -181.86, 134.96, Nzbins, -894.9515, 894.9515);
 
   ofstream bindetails;
@@ -134,19 +136,35 @@ int main(int argc, char** argv)
   
 
   // Fill offset vectors for aggregation
-  rdf_bins.Foreach([&] (ROOT::RVec<int> bin_ids, ROOT::RVec<float> offsets) {
-      for(int i=0; i < offsets.size(); i++)
-	{
-	  //cout << bin_ids[i] << " " << offsets[i] << endl;
-	  bin_vals[bin_ids[i]].push_back(offsets[i]);
-	}
-    }, {"bin_ids", "offsets"});
-
+  // Reco
+  if(!strcmp(sim_or_reco, "reco"))
+    {
+      rdf_bins.Foreach([&] (ROOT::RVec<int> bin_ids, ROOT::RVec<float> offsets) {
+	  for(int i=0; i < offsets.size(); i++)
+	    {
+	      //cout << bin_ids[i] << " " << offsets[i] << endl;
+	      bin_vals[bin_ids[i]].push_back(offsets[i]);
+	    }
+	}, {"bin_ids", "offsets"}); 
+    }
+  // Sim
+  else if(!strcmp(sim_or_reco, "sim"))
+    {
+      unique_ptr<TFile> simFile(new TFile("/cvmfs/icarus.opensciencegrid.org/products/icarus/icarus_data/v09_84_00/icarus_data/SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3_2DSigSimHack.root", "READ"));
+      TH3F* hTrueBkwdX = (TH3F*) simFile->Get("TrueBkwd_Displacement_X");
+      rdf_bins.Foreach([&] (ROOT::RVec<int> bin_ids, ROOT::RVec<float> xs, ROOT::RVec<float> ys, ROOT::RVec<float> zs) {
+	  for(int i=0; i < xs.size(); i++)
+	    {
+	      bin_vals[bin_ids[i]].push_back(-hTrueBkwdX->Interpolate(xs[i],ys[i],zs[i])); 
+	    }
+	}, {"bin_ids", "sel_xs", "sel_ys", "sel_zs"});
+      simFile->Close();
+    }
   // Aggregation
   alloffsets << "gbn,offsets" <<endl;
   for (auto const& b : bin_vals)
     {
-      float bin_agg = -99999; 
+      float bin_agg = -99999.0; 
       if(!b.second.empty())
         { 
           // Calculate aggregated offset
@@ -160,6 +178,7 @@ int main(int argc, char** argv)
 	    }
           alloffsets << endl;
         }
+
       // Store aggregagted offsets in text file/root TH3
       //aggoffsets << b.first << "," << bin_agg << endl;
       DummyHist3D->SetBinContent(b.first, bin_agg);
@@ -171,7 +190,7 @@ int main(int argc, char** argv)
   DummyHist3D->Write();
   outf.Close();
 
-  rdf_bins.Display({"tpc", "sel_xs", "sel_ys", "sel_zs", "offsets", "bin_ids"})->Print();
+  //rdf_bins.Display({"tpc", "sel_xs", "sel_ys", "sel_zs", "offsets", "bin_ids"})->Print();
   cout << "No. tracks: " << rdf_bins.Count().GetValue() << endl;
 
   

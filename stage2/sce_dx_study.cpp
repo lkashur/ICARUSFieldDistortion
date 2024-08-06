@@ -23,17 +23,44 @@
 #include "TFile.h"
 #include "TChain.h"
 #include "TSystemDirectory.h"
+#include <TGraphAsymmErrors.h>
 
 using namespace std;
 
 // Function Declaration
 vector<double> linspace(double start, double end, int n);
+unordered_map<int, vector<double>> csv_map(ifstream& f);
 
 //////////////////////////////////////////////////
 // Main Analysis
 //////////////////////////////////////////////////
 int main(int argc, char** argv)
 {
+
+  // TEST
+  //ifstream errorfile ("cis.txt");
+  /*
+  string line;
+  vector<vector<string> > values;
+  while(getline(errorfile, line))
+    {
+      string line_value;
+      vector<string> line_values;
+      stringstream ss(line);
+      while(getline(ss, line_value, ','))
+	{
+	  line_values.push_back(line_value);
+	}
+      values.emplace_back(line_values);
+    }
+
+  for(const auto& l : values)
+    {
+      cout << l[0] << " " << l[1] << " " << l[1] << endl;
+    }
+  */
+
+
   // Drift Velocity vs. E-Field fit
   TF1 driftVelFit("driftVelFit","(1.0 - 0.0184 * (87.5 - 89.0)) * pol5",-0.05,1.1);
   driftVelFit.SetParameter(0,0.0);
@@ -49,10 +76,15 @@ int main(int argc, char** argv)
   unique_ptr<TFile> infile( TFile::Open(inputfilename) );
   unique_ptr<TH3> hAgg(infile->Get<TH3>("DummyHist3D"));
   
+  Char_t *errorfilename = (Char_t*)"";
+  errorfilename = argv[2];
+  ifstream errorfile (errorfilename);
+  unordered_map<int, vector<double>> errormap = csv_map(errorfile);
+  
   char *tpc;
   float xrange0;
   float xrange1;
-  tpc = (char*) argv[2];
+  tpc = (char*) argv[3];
   int sel_tpc;
   if (!strcmp(tpc, "EE"))
     {
@@ -115,16 +147,41 @@ int main(int argc, char** argv)
 	  // Convert hdx to gdx (TGraph)
 	  vector<double> gx;
 	  vector<double> gy;
+	  vector<double> gx_low;
+	  vector<double> gx_high;
+	  vector<double> gy_low;
+	  vector<double> gy_high;
 	  for (int i = 1; i <= hdx->GetNbinsX(); i++)
 	    {
+	      int gbn = hAgg->FindBin(hdx->GetXaxis()->GetBinCenter(i), hAgg->GetYaxis()->GetBinCenter(j), hAgg->GetZaxis()->GetBinCenter(k));
 	      gx.push_back(hdx->GetXaxis()->GetBinCenter(i));
+	      gx_low.push_back(hdx->GetXaxis()->GetBinWidth(i)/2);
+	      gx_high.push_back(hdx->GetXaxis()->GetBinWidth(i)/2);
 	      gy.push_back(hdx->GetBinContent(i));
+	      double y_low;
+	      double y_high;
+	      if (hAgg->GetBinContent(gbn) != -99999.0)
+		{
+		  y_low = hdx->GetBinContent(i) - errormap.at(gbn).at(0);
+		  y_high = errormap.at(gbn).at(1) - hdx->GetBinContent(i);
+		}
+	      else
+		{
+		  y_low = 0.0;
+		  y_high = 0.0;
+		}
+
+	      gy_low.push_back(y_low);
+	      gy_high.push_back(y_high);
 	    }
 
-	  TGraph *gdx = new TGraph(gx.size(), gx.data(), gy.data());
+	  TGraphAsymmErrors *gdx = new TGraphAsymmErrors(gx.size(), gx.data(), gy.data(), gx_low.data(), gx_high.data(), gy_low.data(), gy_high.data());
+	  //TGraph *gdx = new TGraph(gx.size(), gx.data(), gy.data());
 	  gdx->SetName("gdx");
-	  TF1 *dxfit = new TF1("dxfit","pol3",xrange0,xrange1); // fit
-	  gdx->Fit("dxfit", "MRQFB");
+	  //TF1 *dxfit = new TF1("dxfit","pol3",xrange0,xrange1); // fit
+	  TF1 *dxfit = new TF1("dxfit","[0]*exp([1]*(x-60)) + [2]*(x-60) + [3]",xrange0,xrange1);
+	  dxfit->SetParameters(-11,0.008,0.2,1);
+	  gdx->Fit("dxfit", "MRQFEX0");
 	  gdx->SetTitle("Spatial Offsets vs. Drift Length");
           gdx->GetXaxis()->SetTitle("Drift Length [cm]");
           gdx->GetYaxis()->SetTitle("Spatial Offset dX [cm]");
@@ -355,4 +412,33 @@ vector<double> linspace(double start, double end, int n)
   return xs;
 }
 
+
+
+// CSV to map
+unordered_map<int, vector<double>> csv_map(ifstream& f)
+{
+  string line;
+  vector<vector<string> > lines;
+  getline(f, line);
+  while(getline(f, line))
+    {
+      string line_value;
+      vector<string> line_values;
+      stringstream ss(line);
+      while(getline(ss, line_value, ','))
+        {
+          line_values.push_back(line_value);
+        }
+      lines.emplace_back(line_values);
+    }
+
+  unordered_map<int, vector<double>> m;
+  for(const auto& l : lines)
+    {
+      //cout << l[0] << endl;
+      m[stoi(l[0])] = {stod(l[1]), stod(l[2])};
+    }
+
+  return m;
+}
 
