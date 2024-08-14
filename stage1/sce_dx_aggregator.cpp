@@ -168,9 +168,9 @@ int main(int argc, char** argv)
       if(!b.second.empty())
         { 
           // Calculate aggregated offset
-          bin_agg = Median(b.second, b.second.size());
+          //bin_agg = Median(b.second, b.second.size());
 	  
-          // Store every bin's in output text file
+          // Store every bin's offsets in output text file
           alloffsets << b.first;
           for(auto val : b.second)
 	    {
@@ -179,9 +179,8 @@ int main(int argc, char** argv)
           alloffsets << endl;
         }
 
-      // Store aggregagted offsets in text file/root TH3
-      //aggoffsets << b.first << "," << bin_agg << endl;
-      DummyHist3D->SetBinContent(b.first, bin_agg);
+      // Store aggregagted offsets in TH3
+      //DummyHist3D->SetBinContent(b.first, bin_agg);
     }
   
   bindetails.close();
